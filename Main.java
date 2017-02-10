@@ -2,8 +2,9 @@
 public class Main {
 
 	public static void main(String[] args) {
-		Reader reader = new Reader();
-		reader.read();
+		TreeBuilder treeBuilder = new TreeBuilder();
+		treeBuilder.setup();
+		treeBuilder.build();
 	}
 
 }
