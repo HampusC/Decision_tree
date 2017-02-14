@@ -16,9 +16,9 @@ public class Reader {
 	public void read(){
 		Scanner scan = null; 
 		try{
-			scan = new Scanner(new File("./data.arff"));
+			scan = new Scanner(new File("src/data.arff"));
 		} catch(Exception e){
-			
+			e.printStackTrace();
 		}
 		
 		boolean inData = false;
