@@ -25,7 +25,7 @@ public class TreeBuilder {
 	}
 	
 	public Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, ArrayList<Attribute> attributes, ArrayList<ArrayList<String>> parentExamples){
-		//Slänga in new attribute här? Verkar inte så och blir null pionter men vet ej annars hur man ska göra.
+		//SlÃ¤nga in new attribute hÃ¤r? Verkar inte sÃ¥ och blir null pionter men vet ej annars hur man ska gÃ¶ra.
 		if(examples.isEmpty()){
 			//return pluralityValue(parentExamples);
 			return new Node("example", "empty");
@@ -88,13 +88,13 @@ public class TreeBuilder {
 	    }
 
 	    private void print(String prefix, boolean isTail) {
-	        System.out.println(prefix + (isTail ? "└── " : "├── ") + path + ", " + value);
+	        System.out.println(prefix + (isTail ? "--- " : "|--- ") + path + ", " + value);
 	        for (int i = 0; i < children.size() - 1; i++) {
-	            children.get(i).print(prefix + (isTail ? "    " : "│   "), false);
+	            children.get(i).print(prefix + (isTail ? "    " : "|   "), false);
 	        }
 	        if (children.size() > 0) {
 	            children.get(children.size() - 1)
-	                    .print(prefix + (isTail ?"    " : "│   "), true);
+	                    .print(prefix + (isTail ?"    " : "|   "), true);
 	        }
 	    }
 		
