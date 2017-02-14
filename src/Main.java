@@ -5,6 +5,7 @@ public class Main {
 		TreeBuilder treeBuilder = new TreeBuilder();
 		treeBuilder.setup();
 		treeBuilder.build();
+		treeBuilder.print();
 	}
 
 }

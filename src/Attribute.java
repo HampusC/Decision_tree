@@ -3,23 +3,29 @@ import java.util.ArrayList;
 public class Attribute {
 	
 	private String name;
-	private ArrayList<String> attributes;
+	private ArrayList<String> classifications;
+	private int index;
 	
-	public Attribute(String name){
+	public Attribute(String name, int index){
 		this.name = name;
-		attributes = new ArrayList<String>();
+		classifications = new ArrayList<String>();
+		this.index = index;
 	}
 	
 	public String getName(){
 		return name;
 	}
 	
-	public ArrayList<String> getAttributes(){
-		return attributes;
+	public ArrayList<String> getClassifications(){
+		return classifications;
 	}
 	
-	public void addAttribute(String attribute){
-		attributes.add(attribute);
+	public int getIndex(){
+		return index;
+	}
+	
+	public void addClassification(String attribute){
+		classifications.add(attribute);
 	}
 
 }

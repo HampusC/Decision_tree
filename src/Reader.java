@@ -7,10 +7,12 @@ public class Reader {
 	
 	private ArrayList<Attribute> attributes;
 	private ArrayList<ArrayList<String>> examples;
+	private int attributeCounter;
 
 	public Reader(){
 		attributes = new ArrayList<Attribute>();
 		examples = new ArrayList<ArrayList<String>>();
+		attributeCounter = 0;
 	}
 
 	public void read(){
@@ -36,12 +38,13 @@ public class Reader {
 			split = currentLine.split(" ");
 			if(split[0].equals("@attribute")){
 				String name = split[1];
-				Attribute currentAttribute = new Attribute(name);
+				Attribute currentAttribute = new Attribute(name, attributeCounter);
+				attributeCounter++;
 				String values = split[2];
 				values = values.substring(1, values.length()-1);
 				String[] valueArray = values.split(",");
 				for(String s : valueArray){
-					currentAttribute.addAttribute(s);
+					currentAttribute.addClassification(s);
 				}
 				attributes.add(currentAttribute);
 			} else if(split[0].equals("@data")){
