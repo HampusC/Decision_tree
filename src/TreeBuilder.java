@@ -2,15 +2,13 @@ import java.util.ArrayList;
 
 public class TreeBuilder {
 	
-	private ArrayList<Attribute> attributes;
 	private ArrayList<ArrayList<String>> examples;
-	private ArrayList<ArrayList<String>> parentExamples;
+	private ArrayList<Attribute> attributes;
 	private Node tree;
 	
 	public TreeBuilder(){
-		attributes = new ArrayList<Attribute>();
 		examples = new ArrayList<ArrayList<String>>();
-		parentExamples = new ArrayList<ArrayList<String>>();
+		attributes = new ArrayList<Attribute>();
 	}
 	
 	public void setup(){
@@ -21,62 +19,111 @@ public class TreeBuilder {
 	}
 	
 	public void build(){
-		tree = decisionTreeLearning(examples, attributes, parentExamples);
+		Attribute a = attributes.get(0);
+		ArrayList<Attribute> newAttributes = new ArrayList<Attribute>();
+		for(Attribute at : attributes){
+			newAttributes.add(at);
+		}
+		newAttributes.remove(a);
+		tree = decisionTreeLearning(examples, a, newAttributes);
 	}
 	
-	public Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, ArrayList<Attribute> attributes, ArrayList<ArrayList<String>> parentExamples){
-		//SlÃ¤nga in new attribute hÃ¤r? Verkar inte sÃ¥ och blir null pionter men vet ej annars hur man ska gÃ¶ra.
-		if(examples.isEmpty()){
-			//return pluralityValue(parentExamples);
-			return new Node("example", "empty");
-		} else if(false) { //all examples have the same classification.
-			return new Node("SUPERLUL", "MEGALOL");
-		} else if(attributes.isEmpty()){
-			//return pluralityValue(examples);
-			return new Node("attributes", "empty");
+	public Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, Attribute targetAttribute, ArrayList<Attribute> attributes){
+		Node newTree = new Node();
+		
+		boolean allPositive = true;
+		String allPositiveValue = null;
+		for(ArrayList<String> currentExample : examples){
+			if(!currentExample.get(currentExample.size() - 1).equals("yes")){
+				allPositive = false;
+				break;
+			}
+			allPositiveValue = currentExample.get(targetAttribute.getIndex());
+		}
+		if(allPositive){
+			newTree.setPath(targetAttribute.getName());
+			newTree.setValue(allPositiveValue);
+			newTree.setOutcome(("Yes"));
+			return newTree;
+		}
+		
+		boolean allNegative = true;
+		String allNegativeValue = null;
+		for(ArrayList<String> currentExample : examples){
+			if(!currentExample.get(currentExample.size() - 1).equals("no")){
+				allNegative = false;
+				break;
+			}
+			allNegativeValue = currentExample.get(targetAttribute.getIndex());
+		}
+		if(allNegative){
+			newTree.setPath(targetAttribute.getName());
+			newTree.setValue(allNegativeValue);
+			newTree.setOutcome(("No"));
+			return newTree;
+		}
+		
+		if(attributes.isEmpty()){
+			//FIX
+			newTree.setPath("Sqeeuzy");
+			newTree.setValue(";)");
+			return newTree;
 		}
 		else {
 			Attribute a = attributes.get(0);
-			Node newTree = new Node(a.getName(), "tempus"); //Make new tree. Send better string.
+			newTree.setPath(targetAttribute.getName());
+			//newTree.setValue("Maybe"); //Ta en funderare.
 			ArrayList<String> classifications = a.getClassifications();
 			for(String s : classifications){
+				//newTree.setValue(s);
 				ArrayList<ArrayList<String>> newExamples = new ArrayList<ArrayList<String>>();
 				for(ArrayList<String> tempClassifications : examples) {
 					if(tempClassifications.get(a.getIndex()).equals(s)){
 						newExamples.add(tempClassifications);
 					}
 				}
+				if(newExamples.isEmpty()){
+					Node subTree = new Node();
+					subTree.setPath("examples"); //FEL
+					subTree.setValue("empty"); //FFEL:
+					newTree.addChild(subTree);
+				}
 				ArrayList<Attribute> newAttributes = new ArrayList<Attribute>();
 				for(Attribute at : attributes){
 					newAttributes.add(at);
 				}
 				newAttributes.remove(a);
-				Node subTree = decisionTreeLearning(newExamples, newAttributes, examples);
+				Node subTree = decisionTreeLearning(newExamples, a, newAttributes);
 				newTree.addChild(subTree);
 			}
 			return newTree;
 		}
-		//TODO Add more parts of the algorithm.
-	}
-	
-	private Node pluralityValue(ArrayList<ArrayList<String>> parentExamples) {
-		for(ArrayList<String> currentExamples : parentExamples){
-			
-		}
-		return new Node("LUL", "LOL");
-		//TODO Fix this function.
 	}
 
 	private class Node {
 		
 		private String path;
         private String value;
+        private String outcome;
         private ArrayList<Node> children;
 		
-		public Node(String path, String value){
-			this.path = path;
-			this.value = value;
+		public Node(){
+			path = "";
+			value = ""; 
+			outcome = "";
 			children = new ArrayList<Node>();
+		}
+		
+		public void setPath(String path){
+			this.path = path;
+		}
+		
+		public void setValue(String value){
+			this.value = value;
+		}
+		
+		public void setOutcome(String outcome){
+			this.outcome = outcome;
 		}
 		
 		public void addChild(Node child){
@@ -88,7 +135,7 @@ public class TreeBuilder {
 	    }
 
 	    private void print(String prefix, boolean isTail) {
-	        System.out.println(prefix + (isTail ? "--- " : "|--- ") + path + ", " + value);
+	        System.out.println(prefix + (isTail ? "--- " : "|--- ") + path + ", " + value + ", " + outcome);
 	        for (int i = 0; i < children.size() - 1; i++) {
 	            children.get(i).print(prefix + (isTail ? "    " : "|   "), false);
 	        }
@@ -98,9 +145,6 @@ public class TreeBuilder {
 	        }
 	    }
 		
-		//TODO probably needs more functions, lite get and add.
-		
-        
     }
 	
 	public void print(){

@@ -18,7 +18,7 @@ public class Reader {
 	public void read(){
 		Scanner scan = null; 
 		try{
-			scan = new Scanner(new File("src/data.arff"));
+			scan = new Scanner(new File("src/sqeezy.arff"));
 		} catch(Exception e){
 			e.printStackTrace();
 		}
