@@ -19,7 +19,16 @@ public class TreeBuilder {
 	}
 	
 	public void build(){
-		Attribute a = attributes.get(0);
+		ArrayList<Attribute> tempusAttributes = new ArrayList<Attribute>();
+		for(Attribute at : attributes){
+			if(!attributes.get(attributes.size() - 1).equals(at)){
+				tempusAttributes.add(at);
+			}
+		}
+		
+//		Attribute a = attributes.get(0);
+		Attribute a = importance(attributes, examples);
+//		System.out.println(a.getName());
 		ArrayList<Attribute> newAttributes = new ArrayList<Attribute>();
 		for(Attribute at : attributes){
 			newAttributes.add(at);
@@ -70,7 +79,17 @@ public class TreeBuilder {
 			return newTree;
 		}
 		else {
-			Attribute a = attributes.get(0);
+			//Attribute a = attributes.get(0);
+			System.out.println("===========================");
+			Attribute a = importance(attributes, examples);
+//			System.out.println();
+			for(Attribute sq : attributes){
+				System.out.print(sq.getName() + " ");
+			}
+			System.out.println();
+			System.out.println(a.getName());
+			
+			//Attribute a = importance(attributes, examples);
 			newTree.setPath(targetAttribute.getName());
 			//newTree.setValue("Maybe"); //Ta en funderare.
 			ArrayList<String> classifications = a.getClassifications();
@@ -98,6 +117,85 @@ public class TreeBuilder {
 			}
 			return newTree;
 		}
+	}
+
+	private Attribute importance(ArrayList<Attribute> attributes, ArrayList<ArrayList<String>> examples) {
+		if(attributes.size() == 1){
+			System.out.println(";)");
+			return attributes.get(0);
+		}
+		else if(attributes.size() == 2){
+			if(attributes.get(0).equals(attributes.get(attributes.size() - 1))){
+				return attributes.get(1);
+			} else {
+				return attributes.get(0);
+			}
+		}
+		double max = Double.MIN_VALUE;
+		Attribute best = null;
+		double beforeYes = 0;
+		double beforeSum = 0;
+		for(ArrayList<String> example : examples){
+			beforeSum++;
+			if(example.get(example.size() - 1).equals("yes")){
+				beforeYes++;
+			} 
+		}
+		double entropyBefore = B((double)(beforeYes/beforeSum));
+//		System.out.println("beforeYes: " + beforeYes);
+//		System.out.println("beforeSum: " + beforeSum);
+////		System.out.println("in B: " + (double)(beforeYes/beforeSum)	);
+//		System.out.println("entropy before: " + entropyBefore);
+		for(Attribute current : attributes){
+			if(attributes.get(attributes.size() - 1).equals(current)){
+				break;
+			}
+			//System.out.println(current.getName());
+			double finalSum = 0;
+			ArrayList<String> classifications = current.getClassifications();
+			for(String classi : classifications){
+				//System.out.println(classi);
+				double yes = 0;
+				double sum = 0;;
+				for(ArrayList<String> example: examples){
+					String value = example.get(current.getIndex());
+					if(classi.equals(value)){
+						sum++;
+						if(example.get(example.size() - 1).equals("yes")){
+							yes++;
+						} 
+					}
+				}
+//				System.out.println("yes: " + yes);
+//				System.out.println("sum: " + sum);
+				double B = B((double)(yes/sum));
+//				System.out.println("example: " + examples.size());
+//				System.out.println("B: " + B);
+//				System.out.println("Before: " + (double)sum/examples.size());
+				finalSum = finalSum +  ((double)(sum/examples.size())) * B;
+			}
+//			System.out.println("finalsum: " + finalSum);
+			finalSum = entropyBefore - finalSum; 
+			if(finalSum > max){
+				max = finalSum;
+				best = current;
+			}
+			System.out.println(current.getName() + " " + finalSum);
+		}
+		return best;
+	}
+	
+	private double B(double q){
+		double qlog = q*Math.log(q)/Math.log(2);
+		if(Double.isNaN(qlog)){
+			qlog = 0;
+		}
+		double oneminusqlog = (1.0-q)*Math.log(1.0-q)/Math.log(2);
+		if(Double.isNaN(oneminusqlog)){
+			oneminusqlog = 0;
+		}
+		double result = - (qlog + oneminusqlog);
+		return result;
 	}
 
 	private class Node {
