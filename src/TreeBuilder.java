@@ -1,10 +1,15 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
 public class TreeBuilder {
 	
 	private ArrayList<ArrayList<String>> examples;
+	private ArrayList<ArrayList<String>> originalExamples;
 	private ArrayList<Attribute> attributes;
 	private Node tree;
+	private Attribute last;
 	
 	public TreeBuilder(){
 		examples = new ArrayList<ArrayList<String>>();
@@ -14,147 +19,91 @@ public class TreeBuilder {
 	public void setup(){
 		Reader reader = new Reader();
 		reader.read();
-		attributes = reader.getAttributes();
 		examples = reader.getExamples();
+		originalExamples = reader.getExamples();
+		attributes = reader.getAttributes();
+		last = attributes.get(attributes.size() - 1);
+		attributes.remove(last);
 	}
 	
 	public void build(){
-		ArrayList<Attribute> tempusAttributes = new ArrayList<Attribute>();
-		for(Attribute at : attributes){
-			if(!attributes.get(attributes.size() - 1).equals(at)){
-				tempusAttributes.add(at);
-			}
-		}
-		
-//		Attribute a = attributes.get(0);
-		Attribute a = importance(attributes, examples);
-//		System.out.println(a.getName());
-		ArrayList<Attribute> newAttributes = new ArrayList<Attribute>();
-		for(Attribute at : attributes){
-			newAttributes.add(at);
-		}
-		newAttributes.remove(a);
-		tree = decisionTreeLearning(examples, a, newAttributes);
+		tree = continueTree(tree, examples, attributes, "Root:");
 	}
 	
-	public Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, Attribute targetAttribute, ArrayList<Attribute> attributes){
+	private Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, Attribute targetAttribute, ArrayList<Attribute> attributes, String cameFrom){
 		Node newTree = new Node();
 		
-		boolean allPositive = true;
-		String allPositiveValue = null;
-		for(ArrayList<String> currentExample : examples){
-			if(!currentExample.get(currentExample.size() - 1).equals("yes")){
-				allPositive = false;
-				break;
-			}
-			allPositiveValue = currentExample.get(targetAttribute.getIndex());
-		}
+		boolean allPositive = allPositive(targetAttribute, examples);
 		if(allPositive){
-			newTree.setPath(targetAttribute.getName());
-			newTree.setValue(allPositiveValue);
-			newTree.setOutcome(("Yes"));
+			newTree.setCameFrom(cameFrom);
+			newTree.setValue(("Yes"));
 			return newTree;
 		}
 		
-		boolean allNegative = true;
-		String allNegativeValue = null;
-		for(ArrayList<String> currentExample : examples){
-			if(!currentExample.get(currentExample.size() - 1).equals("no")){
-				allNegative = false;
-				break;
-			}
-			allNegativeValue = currentExample.get(targetAttribute.getIndex());
-		}
+		boolean allNegative = allNegative(targetAttribute, examples);
 		if(allNegative){
-			newTree.setPath(targetAttribute.getName());
-			newTree.setValue(allNegativeValue);
-			newTree.setOutcome(("No"));
+			newTree.setCameFrom(cameFrom);
+			newTree.setValue(("No"));
 			return newTree;
 		}
 		
 		if(attributes.isEmpty()){
-			//FIX
-			newTree.setPath("Sqeeuzy");
-			newTree.setValue(";)");
+			String mostCommon = mostCommonValue(examples, targetAttribute);
+			newTree.setCameFrom(cameFrom);
+			newTree.setValue(mostCommon);
+			return newTree;
+		} else {
+			newTree = continueTree(newTree, examples, attributes, cameFrom);
 			return newTree;
 		}
-		else {
-			//Attribute a = attributes.get(0);
-			System.out.println("===========================");
-			Attribute a = importance(attributes, examples);
-//			System.out.println();
-			for(Attribute sq : attributes){
-				System.out.print(sq.getName() + " ");
+	}
+	
+	private Node continueTree(Node tree, ArrayList<ArrayList<String>> examples, ArrayList<Attribute> attributes, String cameFrom){
+		Attribute a = importance(attributes, examples);
+		attributes.remove(a);
+		tree = new Node();
+		tree.setCameFrom(cameFrom);
+		tree.setValue(a.getName());
+		for(String value : a.getValues()){
+			Node subTree;
+			ArrayList<ArrayList<String>> newExamples = new ArrayList<ArrayList<String>>();
+			for(ArrayList<String> example : examples) {
+				if(example.get(a.getIndex()).equals(value)){
+					newExamples.add(example);
+				}
 			}
-			System.out.println();
-			System.out.println(a.getName());
-			
-			//Attribute a = importance(attributes, examples);
-			newTree.setPath(targetAttribute.getName());
-			//newTree.setValue("Maybe"); //Ta en funderare.
-			ArrayList<String> classifications = a.getClassifications();
-			for(String s : classifications){
-				//newTree.setValue(s);
-				ArrayList<ArrayList<String>> newExamples = new ArrayList<ArrayList<String>>();
-				for(ArrayList<String> tempClassifications : examples) {
-					if(tempClassifications.get(a.getIndex()).equals(s)){
-						newExamples.add(tempClassifications);
-					}
-				}
-				if(newExamples.isEmpty()){
-					Node subTree = new Node();
-					subTree.setPath("examples"); //FEL
-					subTree.setValue("empty"); //FFEL:
-					newTree.addChild(subTree);
-				}
-				ArrayList<Attribute> newAttributes = new ArrayList<Attribute>();
-				for(Attribute at : attributes){
-					newAttributes.add(at);
-				}
-				newAttributes.remove(a);
-				Node subTree = decisionTreeLearning(newExamples, a, newAttributes);
-				newTree.addChild(subTree);
+			if(newExamples.isEmpty()){ 
+				String mostCommon = mostCommonClassification(originalExamples, a, value);
+				char first = Character.toUpperCase(mostCommon.charAt(0));
+				String mostCommonUpperCase = first + mostCommon.substring(1);
+				subTree = new Node();
+				subTree.setCameFrom(value); 
+				subTree.setValue(mostCommonUpperCase);
+			} else {
+				subTree = decisionTreeLearning(newExamples, a, attributes, value);
 			}
-			return newTree;
+			tree.addChild(subTree);
 		}
+		return tree;
 	}
 
 	private Attribute importance(ArrayList<Attribute> attributes, ArrayList<ArrayList<String>> examples) {
 		if(attributes.size() == 1){
-			System.out.println(";)");
 			return attributes.get(0);
-		}
-		else if(attributes.size() == 2){
-			if(attributes.get(0).equals(attributes.get(attributes.size() - 1))){
-				return attributes.get(1);
-			} else {
-				return attributes.get(0);
-			}
 		}
 		double max = Double.MIN_VALUE;
 		Attribute best = null;
 		double beforeYes = 0;
-		double beforeSum = 0;
 		for(ArrayList<String> example : examples){
-			beforeSum++;
 			if(example.get(example.size() - 1).equals("yes")){
 				beforeYes++;
 			} 
 		}
-		double entropyBefore = B((double)(beforeYes/beforeSum));
-//		System.out.println("beforeYes: " + beforeYes);
-//		System.out.println("beforeSum: " + beforeSum);
-////		System.out.println("in B: " + (double)(beforeYes/beforeSum)	);
-//		System.out.println("entropy before: " + entropyBefore);
+		double entropyBefore = B((double)(beforeYes/examples.size()));
 		for(Attribute current : attributes){
-			if(attributes.get(attributes.size() - 1).equals(current)){
-				break;
-			}
-			//System.out.println(current.getName());
 			double finalSum = 0;
-			ArrayList<String> classifications = current.getClassifications();
-			for(String classi : classifications){
-				//System.out.println(classi);
+			ArrayList<String> values = current.getValues();
+			for(String classi : values){
 				double yes = 0;
 				double sum = 0;;
 				for(ArrayList<String> example: examples){
@@ -166,21 +115,14 @@ public class TreeBuilder {
 						} 
 					}
 				}
-//				System.out.println("yes: " + yes);
-//				System.out.println("sum: " + sum);
 				double B = B((double)(yes/sum));
-//				System.out.println("example: " + examples.size());
-//				System.out.println("B: " + B);
-//				System.out.println("Before: " + (double)sum/examples.size());
 				finalSum = finalSum +  ((double)(sum/examples.size())) * B;
 			}
-//			System.out.println("finalsum: " + finalSum);
 			finalSum = entropyBefore - finalSum; 
 			if(finalSum > max){
 				max = finalSum;
 				best = current;
 			}
-			System.out.println(current.getName() + " " + finalSum);
 		}
 		return best;
 	}
@@ -197,31 +139,82 @@ public class TreeBuilder {
 		double result = - (qlog + oneminusqlog);
 		return result;
 	}
+	
+	private String mostCommonValue(ArrayList<ArrayList<String>> examples, Attribute targetAttribute){
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		for(ArrayList<String> example : examples){
+			int index = targetAttribute.getIndex();
+			String temp = example.get(index);
+			if(map.containsKey(temp)){
+				map.put(temp, map.getOrDefault(temp, 0) + 1);
+			} else {
+				map.put(temp, 1);
+			}
+		}
+		String max = Collections.max(map.entrySet(), (entry1, entry2) -> entry1.getValue() - entry2.getValue()).getKey();
+		return max;
+	}
+	
+	private String mostCommonClassification(ArrayList<ArrayList<String>> examples, Attribute targetAttribute, String value){
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		for(ArrayList<String> example : examples){
+			int index = targetAttribute.getIndex();
+			if(example.get(index).equals(value)){				
+				String temp = example.get(example.size() - 1);
+				if(map.containsKey(temp)){
+					map.put(temp, map.getOrDefault(temp, 0) + 1);
+				} else {
+					map.put(temp, 1);
+				}
+			}
+			
+		}
+		String max = null;
+		int maxValueInMap=(Collections.max(map.values()));
+		for (Entry<String, Integer> entry : map.entrySet()) {
+            if (entry.getValue()==maxValueInMap) {
+                max = entry.getKey();
+            }
+        }
+		return max;
+	}
+	
+	private boolean allPositive(Attribute targetAttribute, ArrayList<ArrayList<String>> examples){
+		for(ArrayList<String> currentExample : examples){
+			if(!currentExample.get(currentExample.size() - 1).equals("yes")){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private boolean allNegative(Attribute targetAttribute, ArrayList<ArrayList<String>> examples){
+		for(ArrayList<String> currentExample : examples){
+			if(!currentExample.get(currentExample.size() - 1).equals("no")){
+				return false;
+			}
+		}
+		return true;
+	}
 
 	private class Node {
 		
-		private String path;
+		private String cameFrom;
         private String value;
-        private String outcome;
         private ArrayList<Node> children;
 		
 		public Node(){
-			path = "";
+			cameFrom = "";
 			value = ""; 
-			outcome = "";
 			children = new ArrayList<Node>();
-		}
-		
-		public void setPath(String path){
-			this.path = path;
 		}
 		
 		public void setValue(String value){
 			this.value = value;
 		}
 		
-		public void setOutcome(String outcome){
-			this.outcome = outcome;
+		public void setCameFrom(String cameFrom){
+			this.cameFrom = cameFrom;
 		}
 		
 		public void addChild(Node child){
@@ -233,7 +226,8 @@ public class TreeBuilder {
 	    }
 
 	    private void print(String prefix, boolean isTail) {
-	        System.out.println(prefix + (isTail ? "--- " : "|--- ") + path + ", " + value + ", " + outcome);
+	    	String print = prefix + (isTail ? "└── " : "├── ") + cameFrom + " -> " + value;
+	        System.out.println(print);
 	        for (int i = 0; i < children.size() - 1; i++) {
 	            children.get(i).print(prefix + (isTail ? "    " : "|   "), false);
 	        }

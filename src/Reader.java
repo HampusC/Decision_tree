@@ -18,7 +18,7 @@ public class Reader {
 	public void read(){
 		Scanner scan = null; 
 		try{
-			scan = new Scanner(new File("src/sqeezy.arff"));
+			scan = new Scanner(new File("src/data.arff"));
 		} catch(Exception e){
 			e.printStackTrace();
 		}
@@ -44,7 +44,7 @@ public class Reader {
 				values = values.substring(1, values.length()-1);
 				String[] valueArray = values.split(",");
 				for(String s : valueArray){
-					currentAttribute.addClassification(s);
+					currentAttribute.addValue(s);
 				}
 				attributes.add(currentAttribute);
 			} else if(split[0].equals("@data")){
