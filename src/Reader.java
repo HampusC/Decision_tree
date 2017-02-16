@@ -1,5 +1,6 @@
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -15,12 +16,16 @@ public class Reader {
 		attributeCounter = 0;
 	}
 
-	public void read(){
+	public void read(String path){
 		Scanner scan = null; 
 		try{
-			scan = new Scanner(new File("data/willWait.arff"));
+			scan = new Scanner(new File(path));
 		} catch(Exception e){
-			e.printStackTrace();
+			try {
+				scan = new Scanner(new File("willWait.arff"));
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			}
 		}
 		
 		boolean inData = false;

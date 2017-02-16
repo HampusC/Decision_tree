@@ -16,9 +16,9 @@ public class TreeBuilder {
 		attributes = new ArrayList<Attribute>();
 	}
 	
-	public void setup(){
+	public void setup(String path){
 		Reader reader = new Reader();
-		reader.read();
+		reader.read(path);
 		examples = reader.getExamples();
 		originalExamples = reader.getExamples();
 		attributes = reader.getAttributes();
