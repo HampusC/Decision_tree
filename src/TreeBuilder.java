@@ -33,17 +33,10 @@ public class TreeBuilder {
 	private Node decisionTreeLearning(ArrayList<ArrayList<String>> examples, Attribute targetAttribute, ArrayList<Attribute> attributes, String cameFrom){
 		Node newTree = new Node();
 		
-		boolean allPositive = allPositive(targetAttribute, examples);
-		if(allPositive){
+		String allSameClassification = allSameClassification(targetAttribute, examples);
+		if(allSameClassification != null){
 			newTree.setCameFrom(cameFrom);
-			newTree.setValue(("Yes"));
-			return newTree;
-		}
-		
-		boolean allNegative = allNegative(targetAttribute, examples);
-		if(allNegative){
-			newTree.setCameFrom(cameFrom);
-			newTree.setValue(("No"));
+			newTree.setValue((allSameClassification));
 			return newTree;
 		}
 		
@@ -74,11 +67,9 @@ public class TreeBuilder {
 			}
 			if(newExamples.isEmpty()){ 
 				String mostCommon = mostCommonClassification(originalExamples, a, value);
-				char first = Character.toUpperCase(mostCommon.charAt(0));
-				String mostCommonUpperCase = first + mostCommon.substring(1);
 				subTree = new Node();
 				subTree.setCameFrom(value); 
-				subTree.setValue(mostCommonUpperCase);
+				subTree.setValue(mostCommon);
 			} else {
 				subTree = decisionTreeLearning(newExamples, a, attributes, value);
 			}
@@ -93,51 +84,66 @@ public class TreeBuilder {
 		}
 		double max = Double.MIN_VALUE;
 		Attribute best = null;
-		double beforeYes = 0;
-		for(ArrayList<String> example : examples){
-			if(example.get(example.size() - 1).equals("yes")){
-				beforeYes++;
-			} 
-		}
-		double entropyBefore = B((double)(beforeYes/examples.size()));
+		double entropyBefore = entropyBefore(examples);
 		for(Attribute current : attributes){
-			double finalSum = 0;
+			double entropyAfter = 0;
 			ArrayList<String> values = current.getValues();
 			for(String classi : values){
-				double yes = 0;
-				double sum = 0;;
-				for(ArrayList<String> example: examples){
-					String value = example.get(current.getIndex());
-					if(classi.equals(value)){
-						sum++;
-						if(example.get(example.size() - 1).equals("yes")){
-							yes++;
-						} 
-					}
-				}
-				double B = B((double)(yes/sum));
-				finalSum = finalSum +  ((double)(sum/examples.size())) * B;
+				double entropy = entropy(examples, current, classi);
+				entropyAfter = entropyAfter + entropy;
 			}
-			finalSum = entropyBefore - finalSum; 
-			if(finalSum > max){
-				max = finalSum;
+			entropyAfter = entropyBefore - entropyAfter; 
+			if(entropyAfter > max){
+				max = entropyAfter;
 				best = current;
 			}
 		}
 		return best;
 	}
 	
-	private double B(double q){
-		double qlog = q*Math.log(q)/Math.log(2);
-		if(Double.isNaN(qlog)){
-			qlog = 0;
+	private double entropyBefore(ArrayList<ArrayList<String>> examples){
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		for(ArrayList<String> example : examples){			
+			String lastOne = example.get(example.size() - 1);
+			if(map.containsKey(lastOne)){
+				map.put(lastOne, map.getOrDefault(lastOne, 0) + 1);
+			} else {
+				map.put(lastOne, 1);
+			}
 		}
-		double oneminusqlog = (1.0-q)*Math.log(1.0-q)/Math.log(2);
-		if(Double.isNaN(oneminusqlog)){
-			oneminusqlog = 0;
+		double entropy = calculateEntropy(map, examples.size());
+		return entropy;
+	}
+	
+	private double entropy(ArrayList<ArrayList<String>> examples, Attribute current, String classi){
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
+		double sum = 0;;
+		for(ArrayList<String> example: examples){
+			String value = example.get(current.getIndex());
+			if(classi.equals(value)){
+				String lastOne = example.get(example.size() - 1);
+				if(map.containsKey(lastOne)){
+					map.put(lastOne, map.getOrDefault(lastOne, 0) + 1);
+				} else {
+					map.put(lastOne, 1);
+				}
+			sum++;
+			}
 		}
-		double result = - (qlog + oneminusqlog);
-		return result;
+		double entropy = calculateEntropy(map, sum);
+		entropy = sum/(double)examples.size() * entropy;
+		return entropy;
+	}
+	
+	private double calculateEntropy(HashMap<String, Integer> map, double size){
+		double entropy = 0; 
+		for (Entry<String, Integer> entry : map.entrySet()) {
+			double probability = entry.getValue()/(double)size;
+			double currentEntropy = probability * Math.log(probability)/Math.log(2);
+			entropy = entropy + currentEntropy;
+		}
+		entropy = - entropy;
+		return entropy;
 	}
 	
 	private String mostCommonValue(ArrayList<ArrayList<String>> examples, Attribute targetAttribute){
@@ -167,7 +173,6 @@ public class TreeBuilder {
 					map.put(temp, 1);
 				}
 			}
-			
 		}
 		String max = null;
 		int maxValueInMap=(Collections.max(map.values()));
@@ -179,22 +184,20 @@ public class TreeBuilder {
 		return max;
 	}
 	
-	private boolean allPositive(Attribute targetAttribute, ArrayList<ArrayList<String>> examples){
+	private String allSameClassification(Attribute targetAttribute, ArrayList<ArrayList<String>> examples){
+		HashMap<String, Integer> map = new HashMap<String, Integer>();
 		for(ArrayList<String> currentExample : examples){
-			if(!currentExample.get(currentExample.size() - 1).equals("yes")){
-				return false;
+			String classi = currentExample.get(currentExample.size() - 1);
+			if(map.containsKey(classi)){
+				map.put(classi, map.getOrDefault(classi, 0) + 1);
+			} else {
+				map.put(classi, 1);
 			}
 		}
-		return true;
-	}
-	
-	private boolean allNegative(Attribute targetAttribute, ArrayList<ArrayList<String>> examples){
-		for(ArrayList<String> currentExample : examples){
-			if(!currentExample.get(currentExample.size() - 1).equals("no")){
-				return false;
-			}
+		if(map.size() == 1){
+			return map.keySet().iterator().next();
 		}
-		return true;
+		return null;
 	}
 
 	private class Node {
